@@ -47,12 +47,9 @@ export const RoomHeader = ({ showNav, activeTab, onTabChange }: RoomHeaderProps)
     }
   };
 
-  const tabs = ['leaderboard', 'question', 'dashboard'];
-
   return (
     <header className="h-14 glass-strong border-b border-border flex items-center justify-between px-4">
       <div className="flex items-center gap-4">
-       
       </div>
 
       <div className="flex items-center gap-3">
