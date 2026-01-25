@@ -52,27 +52,7 @@ export const RoomHeader = ({ showNav, activeTab, onTabChange }: RoomHeaderProps)
   return (
     <header className="h-14 glass-strong border-b border-border flex items-center justify-between px-4">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" className="lg:hidden">
-          <Menu className="w-5 h-5" />
-        </Button>
-        
-        {showNav && (
-          <nav className="hidden md:flex items-center gap-1">
-            {tabs.map((tab) => (
-              <button
-                key={tab}
-                onClick={() => onTabChange?.(tab)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 capitalize ${
-                  activeTab === tab
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
-                }`}
-              >
-                {tab}
-              </button>
-            ))}
-          </nav>
-        )}
+       
       </div>
 
       <div className="flex items-center gap-3">

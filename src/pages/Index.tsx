@@ -262,7 +262,7 @@ const Index = () => {
           <h1 className="text-4xl font-bold mb-2">
             <span className="gradient-text">QuizRoom</span>
           </h1>
-          <p className="text-muted-foreground">Real-time AI-powered quizzes</p>
+          <p className="text-muted-foreground">Real-time Quizzes</p>
         </div>
 
 
