@@ -24,15 +24,15 @@ export const ChatInterface = () => {
     setTimeout(() => {
       const mockQuestion = {
         id: Date.now().toString(),
-        question: `Generated question based on: "${prompt}"`,
+        text: `Generated question based on: "${prompt}"`,
         options: ['Option A', 'Option B', 'Option C', 'Option D'],
-        correctAnswer: 0,
+        correctAnswerIndex: 0,
       };
       
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: `I've generated a quiz question for you:\n\n**${mockQuestion.question}**\n\nA) ${mockQuestion.options[0]}\nB) ${mockQuestion.options[1]}\nC) ${mockQuestion.options[2]}\nD) ${mockQuestion.options[3]}\n\nClick "Send to Players" to broadcast this question.`,
+        content: `I've generated a quiz question for you:\n\n**${mockQuestion.text}**\n\nA) ${mockQuestion.options[0]}\nB) ${mockQuestion.options[1]}\nC) ${mockQuestion.options[2]}\nD) ${mockQuestion.options[3]}\n\nClick "Send to Players" to broadcast this question.`,
       };
       addMessage(assistantMessage);
       setCurrentQuestion(mockQuestion);

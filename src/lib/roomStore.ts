@@ -1,5 +1,9 @@
 import { create } from 'zustand';
 
+/* =======================
+   TYPES
+======================= */
+
 export interface Player {
   id: string;
   name: string;
@@ -8,9 +12,9 @@ export interface Player {
 
 export interface Question {
   id: string;
-  question: string;
+  text: string;
   options: string[];
-  correctAnswer: number;
+  correctAnswerIndex?: number;
 }
 
 export interface Message {
@@ -23,26 +27,31 @@ interface RoomState {
   roomId: string | null;
   isHost: boolean;
   playerName: string;
+
   players: Player[];
   currentQuestion: Question | null;
   messages: Message[];
-  
-  // Actions
-  createRoom: (playerName: string) => string;
-  joinRoom: (roomId: string, playerName: string) => boolean;
-  setPlayerName: (name: string) => void;
-  addPlayer: (player: Player) => void;
-  updateScore: (playerId: string, score: number) => void;
+
+  // lifecycle
+  createRoom: (roomId: string, playerName: string) => void;
+  joinRoom: (roomId: string, playerName: string) => void;
+  leaveRoom: () => void;
+
+  // players
+  setPlayers: (players: Player[]) => void;      // snapshot
+  addPlayer: (player: Player) => void;          // realtime
+  setLeaderboard: (scores: Record<string, number>) => void;
+
+  // question & chat
   setCurrentQuestion: (question: Question | null) => void;
   addMessage: (message: Message) => void;
-  leaveRoom: () => void;
 }
 
-const generateRoomId = (): string => {
-  return Math.floor(100000 + Math.random() * 900000).toString();
-};
+/* =======================
+   STORE
+======================= */
 
-export const useRoomStore = create<RoomState>((set, get) => ({
+export const useRoomStore = create<RoomState>((set) => ({
   roomId: null,
   isHost: false,
   playerName: '',
@@ -50,52 +59,24 @@ export const useRoomStore = create<RoomState>((set, get) => ({
   currentQuestion: null,
   messages: [],
 
-  createRoom: (playerName: string) => {
-    const roomId = generateRoomId();
+  /* ===== ROOM ===== */
+
+  createRoom: (roomId, playerName) =>
     set({
       roomId,
       isHost: true,
       playerName,
-      players: [{ id: '1', name: playerName, score: 0 }],
-      messages: [],
+      players: [],
       currentQuestion: null,
-    });
-    return roomId;
-  },
+      messages: [],
+    }),
 
-  joinRoom: (roomId: string, playerName: string) => {
-    // In a real app, this would validate with backend
-    const playerId = Date.now().toString();
-    set((state) => ({
+  joinRoom: (roomId, playerName) =>
+    set({
       roomId,
       isHost: false,
       playerName,
-      players: [...state.players, { id: playerId, name: playerName, score: 0 }],
-    }));
-    return true;
-  },
-
-  setPlayerName: (name: string) => set({ playerName: name }),
-
-  addPlayer: (player: Player) =>
-    set((state) => ({
-      players: [...state.players, player],
-    })),
-
-  updateScore: (playerId: string, score: number) =>
-    set((state) => ({
-      players: state.players.map((p) =>
-        p.id === playerId ? { ...p, score } : p
-      ),
-    })),
-
-  setCurrentQuestion: (question: Question | null) =>
-    set({ currentQuestion: question }),
-
-  addMessage: (message: Message) =>
-    set((state) => ({
-      messages: [...state.messages, message],
-    })),
+    }),
 
   leaveRoom: () =>
     set({
@@ -106,4 +87,45 @@ export const useRoomStore = create<RoomState>((set, get) => ({
       currentQuestion: null,
       messages: [],
     }),
+
+  /* ===== PLAYERS ===== */
+
+  // ✅ SNAPSHOT LOAD (HOST / PLAYER INIT)
+  setPlayers: (players) =>
+    set({
+      players: players.map((p) => ({
+        ...p,
+        score: p.score ?? 0,
+      })),
+    }),
+
+  // ✅ REALTIME JOIN (NO DUPLICATES)
+  addPlayer: (player) =>
+    set((state) => ({
+      players: state.players.some((p) => p.id === player.id)
+        ? state.players
+        : [...state.players, { ...player, score: player.score ?? 0 }],
+    })),
+
+  // ✅ REALTIME SCORE UPDATE (DO NOT REPLACE PLAYERS)
+  setLeaderboard: (scores) =>
+    set((state) => ({
+      players: state.players.map((p) => ({
+        ...p,
+        score:
+          typeof scores[p.id] === 'number'
+            ? scores[p.id]
+            : p.score,
+      })),
+    })),
+
+  /* ===== QUESTION & CHAT ===== */
+
+  setCurrentQuestion: (question) =>
+    set({ currentQuestion: question }),
+
+  addMessage: (message) =>
+    set((state) => ({
+      messages: [...state.messages, message],
+    })),
 }));

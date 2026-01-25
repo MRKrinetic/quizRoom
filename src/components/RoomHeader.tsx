@@ -2,7 +2,10 @@ import { Copy, LogOut, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useRoomStore } from '@/lib/roomStore';
 import { useNavigate } from 'react-router-dom';
+import { getApiBase } from '@/network';
 import { toast } from 'sonner';
+import { ensureCsrfToken, getCookie } from '@/network';
+
 
 interface RoomHeaderProps {
   showNav?: boolean;
@@ -11,7 +14,7 @@ interface RoomHeaderProps {
 }
 
 export const RoomHeader = ({ showNav, activeTab, onTabChange }: RoomHeaderProps) => {
-  const { roomId, leaveRoom } = useRoomStore();
+  const { roomId, isHost, leaveRoom } = useRoomStore();
   const navigate = useNavigate();
 
   const copyRoomId = () => {
@@ -21,9 +24,27 @@ export const RoomHeader = ({ showNav, activeTab, onTabChange }: RoomHeaderProps)
     }
   };
 
-  const handleLeave = () => {
-    leaveRoom();
-    navigate('/');
+  const handleLeave = async () => {
+    try {
+      await ensureCsrfToken();
+
+      // ✅ READ token from cookie
+      const csrfToken = getCookie('XSRF-TOKEN');
+      if (isHost && roomId) {
+        await fetch(`${getApiBase()}/api/rooms/${roomId}/end`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+          ...(csrfToken && { 'X-XSRF-TOKEN': csrfToken }),
+          },
+        });
+      }
+
+      leaveRoom();
+      navigate('/');
+    } catch (err) {
+      toast.error('Failed to leave room');
+    }
   };
 
   const tabs = ['leaderboard', 'question', 'dashboard'];

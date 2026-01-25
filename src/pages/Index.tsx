@@ -13,7 +13,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useRoomStore } from '@/lib/roomStore';
 import { toast } from 'sonner';
-import { getCookie } from '@/network';
+import { ensureCsrfToken, getApiBase, getCookie } from '@/network';
 
 type AuthUser = {
   displayName: string;
@@ -43,7 +43,7 @@ const Index = () => {
 
   const checkUserStatus = async () => {
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || '';
+      const apiUrl = getApiBase();
       const res = await fetch(`${apiUrl}/api/auth/me`, {
         method: 'GET',
         credentials: "include",
@@ -80,14 +80,37 @@ const Index = () => {
      return;
     }
 
-    const roomId = createRoom(playerName.trim());
-    toast.success(`Room ${roomId} created!`);
-    navigate('/host');
+    try {
+      const apiUrl = getApiBase();
+      await ensureCsrfToken();
+      const csrfToken = getCookie('XSRF-TOKEN');
+
+      const res = await fetch(`${apiUrl}/api/rooms/create`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(csrfToken && { 'X-XSRF-TOKEN': csrfToken }),
+        },
+      });
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(errorText || `Create room failed: ${res.status}`);
+      }
+
+      const roomId = await res.text();
+      createRoom(roomId, playerName.trim());
+      toast.success(`Room ${roomId} created!`);
+      navigate('/host');
+    } catch (error) {
+      toast.error('Failed to create room');
+    }
   };
 
   const checkLogin = async () => {
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || '';
+      const apiUrl = getApiBase();
 
       const res = await fetch(`${apiUrl}/api/auth/me`, {
         credentials: "include", 
@@ -121,19 +144,41 @@ const Index = () => {
       return;
     }
 
-    joinRoom(roomCode, playerName.trim());
-    toast.success('Joined room successfully!');
-    navigate('/play');
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || '';
+      await ensureCsrfToken();
+      const csrfToken = getCookie('XSRF-TOKEN');
+
+      const res = await fetch(`${apiUrl}/api/rooms/${roomCode}/join`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          ...(csrfToken && { 'X-XSRF-TOKEN': csrfToken }),
+        },
+      });
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(errorText || `Join room failed: ${res.status}`);
+      }
+
+      joinRoom(roomCode, playerName.trim());
+      toast.success('Joined room successfully!');
+      navigate('/play');
+    } catch (error) {
+      toast.error('Failed to join room');
+    }
   };
 
   const handleLogin = () => {
-    const apiUrl = import.meta.env.VITE_API_URL || '';
+    const apiUrl = getApiBase();
     window.location.href = `${apiUrl}/oauth2/authorization/google`;
   };
 
   const handleLogout = async () => {
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || '';
+      const apiUrl = getApiBase();
+      await ensureCsrfToken();
       const res = await fetch(`${apiUrl}/logout`, {
         method: 'POST',
         credentials: 'include',

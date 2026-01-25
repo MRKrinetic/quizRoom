@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { CheckCircle, XCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { useRoomStore } from '@/lib/roomStore';
 import { cn } from '@/lib/utils';
+import { ensureCsrfToken, getApiBase, getCookie } from '@/network';
 
 export const QuestionDisplay = () => {
-  const { currentQuestion, isHost } = useRoomStore();
+  const { currentQuestion, isHost, roomId } = useRoomStore();
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [hasAnswered, setHasAnswered] = useState(false);
 
@@ -26,10 +26,36 @@ export const QuestionDisplay = () => {
     );
   }
 
-  const handleAnswer = (index: number) => {
-    if (hasAnswered) return;
+  const handleAnswer = async (index: number) => {
+    if (hasAnswered || !currentQuestion || !roomId) return;
     setSelectedAnswer(index);
     setHasAnswered(true);
+
+    try {
+      const apiUrl = getApiBase();
+      const answer = currentQuestion.options[index];
+      await ensureCsrfToken();
+      const csrfToken = getCookie('XSRF-TOKEN');
+
+      const res = await fetch(
+        `${apiUrl}/api/rooms/${roomId}/answers/${currentQuestion.id}`,
+        {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'text/plain',
+            ...(csrfToken && { 'X-XSRF-TOKEN': csrfToken }),
+          },
+          body: answer,
+        }
+      );
+
+      if (!res.ok) {
+        throw new Error(`Answer submit failed: ${res.status}`);
+      }
+    } catch (error) {
+      setHasAnswered(false);
+    }
   };
 
   const optionLabels = ['A', 'B', 'C', 'D'];
@@ -40,14 +66,16 @@ export const QuestionDisplay = () => {
         {/* Question */}
         <div className="glass-strong rounded-2xl p-6 w-full mb-8">
           <h2 className="text-xl md:text-2xl font-semibold text-center">
-            {currentQuestion.question}
+            {currentQuestion.text}
           </h2>
         </div>
 
         {/* Options */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
           {currentQuestion.options.map((option, index) => {
-            const isCorrect = index === currentQuestion.correctAnswer;
+            const correctIndex = currentQuestion.correctAnswerIndex;
+            const showCorrectness = correctIndex !== undefined && correctIndex !== null;
+            const isCorrect = showCorrectness && index === correctIndex;
             const isSelected = selectedAnswer === index;
             
             return (
@@ -88,14 +116,18 @@ export const QuestionDisplay = () => {
         {hasAnswered && (
           <div className={cn(
             "mt-8 p-4 rounded-xl text-center animate-scale-in",
-            selectedAnswer === currentQuestion.correctAnswer
-              ? "bg-green-500/20 text-green-400"
-              : "bg-destructive/20 text-destructive"
+            currentQuestion.correctAnswerIndex !== undefined
+              ? selectedAnswer === currentQuestion.correctAnswerIndex
+                ? "bg-green-500/20 text-green-400"
+                : "bg-destructive/20 text-destructive"
+              : "bg-secondary text-foreground"
           )}>
             <p className="text-lg font-semibold">
-              {selectedAnswer === currentQuestion.correctAnswer
-                ? "🎉 Correct! +100 points"
-                : "❌ Wrong answer"
+              {currentQuestion.correctAnswerIndex !== undefined
+                ? selectedAnswer === currentQuestion.correctAnswerIndex
+                  ? "🎉 Correct! +100 points"
+                  : "❌ Wrong answer"
+                : "Answer submitted"
               }
             </p>
           </div>
