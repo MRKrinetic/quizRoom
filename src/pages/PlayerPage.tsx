@@ -138,10 +138,6 @@ const PlayerPage = () => {
       <RoomHeader />
 
       <div className="flex-1 flex overflow-hidden">
-        <aside className="hidden lg:flex w-72 border-r border-border bg-sidebar">
-          <Leaderboard />
-        </aside>
-
         <main className="flex-1 flex flex-col overflow-hidden">
           <QuestionDisplay />
         </main>

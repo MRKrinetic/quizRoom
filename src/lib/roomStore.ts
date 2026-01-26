@@ -14,6 +14,7 @@ export interface Question {
   id: string;
   text: string;
   options: string[];
+  imageUrl?: string | null;
   correctAnswerIndex?: number;
 }
 
