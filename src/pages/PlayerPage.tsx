@@ -21,6 +21,12 @@ const PlayerPage = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    return () => {
+      useRoomStore.getState().resetRoom();
+    };
+  }, []);
+
+  useEffect(() => {
     if (!roomId) {
       toast.error('Room expired');
       navigate('/');
@@ -61,13 +67,10 @@ const PlayerPage = () => {
             break;
 
           case 'ROOM_ENDED':
-            leaveRoom();
             toast.error('Room ended');
-            navigate('/');
-            break;
-
-          case 'QUIZ_ENDED':
-            toast.success('Quiz ended');
+            useRoomStore.getState().resetRoom();
+            client.deactivate();
+            navigate('/', {replace: true});
             break;
 
           case 'QUESTION_ENDED':
@@ -119,7 +122,7 @@ const PlayerPage = () => {
     return () => {
       client.deactivate();
     }
-  }, [roomId]);
+  }, [roomId, navigate, addPlayer, setPlayers, setCurrentQuestion, setLeaderboard]);
 
   return (
     <div className="min-h-screen flex flex-col">

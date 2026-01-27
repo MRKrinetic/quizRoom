@@ -50,6 +50,8 @@ interface RoomState {
   // question & chat
   setCurrentQuestion: (question: Question | null) => void;
   addMessage: (message: Message) => void;
+
+  resetRoom: () => void;
 }
 
 /* =======================
@@ -93,6 +95,15 @@ export const useRoomStore = create<RoomState>((set) => ({
       messages: [],
     }),
 
+    resetRoom: () =>
+      set({
+        roomId: null,
+        isHost: false,
+        playerName: '',
+        players: [],
+        currentQuestion: null,
+        messages: [],
+      }),
   /* ===== PLAYERS ===== */
 
   // ✅ SNAPSHOT LOAD (HOST / PLAYER INIT)
@@ -133,4 +144,5 @@ export const useRoomStore = create<RoomState>((set) => ({
     set((state) => ({
       messages: [...state.messages, message],
     })),
+
 }));
