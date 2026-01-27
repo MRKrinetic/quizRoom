@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RoomHeader } from '@/components/RoomHeader';
-import { Leaderboard } from '@/components/Leaderboard';
 import QuestionBuilder from '@/components/QuestionBuilder';
 import { useRoomStore } from '@/lib/roomStore';
 import { toast } from 'sonner';
@@ -9,6 +8,7 @@ import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { ensureCsrfToken, getApiBase, getCookie } from '@/network';
 import { Question } from '@/lib/question';
+import { WsEvent } from '@/lib/wsEvents';
 
 
 const HostPage = () => {
@@ -37,6 +37,8 @@ const HostPage = () => {
     },
   ]);
 
+  const q = questions[currentIndex];
+  const isLocked = q?.sent === true;
   /* ================= ACCESS CHECK ================= */
   useEffect(() => {
     if (!roomId || !isHost) navigate('/');
@@ -88,7 +90,7 @@ const HostPage = () => {
     client.onConnect = () => {
       client.subscribe(`/topic/room/${roomId}`, (message) => {
         try {
-          const event = JSON.parse(message.body);
+          const event: WsEvent = JSON.parse(message.body);
 
           if (event.type === 'PLAYER_JOINED') {
             addPlayer(event.payload);
@@ -98,10 +100,11 @@ const HostPage = () => {
             const payload = event.payload;
             setCurrentQuestion({
               id: String(payload.id),
+              type: payload.type,
               text: payload.text,
-              options: payload.optionsJson
-                ? JSON.parse(payload.optionsJson)
-                : [],
+              options: payload.options ?? [],
+              endTime: payload.endTime,
+              questionKey: payload.questionKey,
             });
           }
 
@@ -150,7 +153,7 @@ const HostPage = () => {
       return;
     }
 
-    if (q.type === 'MSQ' && (!q.correctAnswerIndexes || q.correctAnswerIndexes.length === 0)) {
+    if (q.type === 'MSQ' && (!q.correctAnswerIndexes?.length)) {
       toast.error('Select at least one correct answer');
       return;
     }
@@ -171,10 +174,21 @@ const HostPage = () => {
 
       const correctAnswer =
         q.type === 'MCQ'
-          ? q.options[q.correctAnswerIndex]
+          ? [q.options[q.correctAnswerIndex]]
           : q.type === 'MSQ'
           ? q.correctAnswerIndexes.map(i => q.options[i])
-          : q.correctAnswerText;
+          : [q.correctAnswerText];
+
+      const payload = {
+        id: q.id,
+        type: q.type,
+        text: q.text,
+        optionsJson: q.type === 'NAT' ? null : JSON.stringify(q.options),
+        correctAnswer,
+        points: 2,
+        timeLimitSeconds: q.duration,
+        endTime,
+      };
 
       const res = await fetch(
         `${apiUrl}/api/rooms/${roomId}/quiz/question`,
@@ -185,25 +199,28 @@ const HostPage = () => {
             'Content-Type': 'application/json',
             ...(csrfToken && { 'X-XSRF-TOKEN': csrfToken }),
           },
-          body: JSON.stringify({
-            id: q.id,
-            type: q.type,
-            text: q.text,
-            optionsJson: q.type === 'NAT' ? null : JSON.stringify(q.options),
-            correctAnswer,
-            points: 100,
-            timeLimitSeconds: q.duration,
-            endTime,
-          }),
+          body: JSON.stringify(payload),
         }
       );
 
       if (!res.ok) throw new Error();
+
+      setQuestions(prev => {
+        const copy = [...prev];
+        copy[currentIndex] = {
+          ...copy[currentIndex],
+          sent: true,
+        };
+        return copy;
+      });
+      
       toast.success(`Question ${currentIndex + 1} sent`);
-    } catch {
+    } catch (e) {
+      console.error(e);
       toast.error('Failed to send question');
     }
   };
+
 
   /* ================= UI ================= */
   return (
@@ -215,6 +232,7 @@ const HostPage = () => {
           <div className="flex-1 overflow-auto">
             <QuestionBuilder
               question={questions[currentIndex]}
+              locked={isLocked}
               questionNumber={currentIndex + 1}
               totalQuestions={questions.length}
               onChange={updateQuestion}

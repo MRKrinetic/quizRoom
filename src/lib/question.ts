@@ -6,8 +6,10 @@ export type Question = {
   type: QuestionType;
   text: string;
   options: string[];
+  endTime?: string;
   correctAnswerIndex?: number;       // MCQ
   correctAnswerIndexes?: number[];   // MSQ
   correctAnswerText?: string;        // NAT
   duration: number;
+  sent?: boolean;
 };

@@ -8,18 +8,20 @@ import { Send } from 'lucide-react';
 
 type Props = {
   question: Question;
+  locked: boolean;
   questionNumber: number;
   totalQuestions: number;
   onChange: (q: Question) => void;
   onNext: () => void;
   onPrevious: () => void;
-  onSend: () => void;
+  onSend: () => Promise<void>;
 };
 
 const DURATIONS = [10, 15, 30, 45, 60];
 
 const QuestionBuilder = ({
   question,
+  locked,
   questionNumber,
   totalQuestions,
   onChange,
@@ -32,12 +34,14 @@ const QuestionBuilder = ({
   };
 
   const updateOption = (index: number, value: string) => {
+    if(locked) return;
     const opts = [...question.options];
     opts[index] = value;
     update({ options: opts });
   };
 
   const toggleMSQAnswer = (index: number) => {
+    if(locked) return;
     const set = new Set(question.correctAnswerIndexes || []);
     set.has(index) ? set.delete(index) : set.add(index);
     update({ correctAnswerIndexes: Array.from(set) });
@@ -70,6 +74,7 @@ const QuestionBuilder = ({
             {(['MCQ', 'MSQ', 'NAT'] as QuestionType[]).map(type => (
                 <Button
                 key={type}
+                disabled={locked}
                 variant={question.type === type ? 'default' : 'outline'}
                 onClick={() =>
                     update({
@@ -91,6 +96,7 @@ const QuestionBuilder = ({
       <div className="space-y-2">
         <Label>Question</Label>
         <Input
+          disabled={locked}
           placeholder="Enter your question"
           value={question.text}
           onChange={e => update({ text: e.target.value })}
@@ -107,6 +113,7 @@ const QuestionBuilder = ({
               {question.type === 'MCQ' && (
                 <input
                   type="radio"
+                  disabled={locked}
                   checked={question.correctAnswerIndex === i}
                   onChange={() => update({ correctAnswerIndex: i })}
                 />
@@ -115,12 +122,14 @@ const QuestionBuilder = ({
               {question.type === 'MSQ' && (
                 <input
                   type="checkbox"
+                  disabled={locked}
                   checked={question.correctAnswerIndexes?.includes(i)}
                   onChange={() => toggleMSQAnswer(i)}
                 />
               )}
 
               <Input
+                disabled={locked}
                 placeholder={`Option ${i + 1}`}
                 value={opt}
                 onChange={e => updateOption(i, e.target.value)}
@@ -135,6 +144,7 @@ const QuestionBuilder = ({
         <div className="space-y-2">
           <Label>Correct Answer (NAT)</Label>
           <Input
+            disabled={locked}
             placeholder="Enter correct answer"
             value={question.correctAnswerText || ''}
             onChange={e => update({ correctAnswerText: e.target.value })}
@@ -151,6 +161,7 @@ const QuestionBuilder = ({
           {DURATIONS.map(d => (
             <Button
               key={d}
+              disabled={locked}
               variant={question.duration === d ? 'default' : 'outline'}
               onClick={() => update({ duration: d })}
             >
@@ -161,6 +172,7 @@ const QuestionBuilder = ({
         {/* RIGHT: SEND */}
            <div className='flex justify-end'>
             <Button
+              disabled={locked}
             onClick={onSend}
             className="h-10"
             >

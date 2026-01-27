@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { QuestionType } from './question';
 
 /* =======================
    TYPES
@@ -12,8 +13,11 @@ export interface Player {
 
 export interface Question {
   id: string;
+  type: QuestionType;
   text: string;
   options: string[];
+  endTime: string;
+  questionKey: string;
   imageUrl?: string | null;
   correctAnswerIndex?: number;
 }
