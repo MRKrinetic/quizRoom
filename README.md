@@ -42,7 +42,7 @@ Create a `.env` file in the project root:
 
 ```env
 VITE_API_URL=http://localhost:8080
-# Optional: retained for deployment/back-end tooling compatibility.
+# Optional: retained for deployment/backend tooling compatibility.
 VITE_BACKEND_URL=http://localhost:8080
 ```
 
