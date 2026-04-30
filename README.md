@@ -42,11 +42,12 @@ Create a `.env` file in the project root:
 
 ```env
 VITE_API_URL=http://localhost:8080
+# Optional: retained for deployment/back-end tooling compatibility.
 VITE_BACKEND_URL=http://localhost:8080
 ```
 
 - `VITE_API_URL` is used for REST endpoints and WebSocket handshake.
-- `VITE_BACKEND_URL` is kept for compatibility with the backend configuration (not directly used in the UI).
+- `VITE_BACKEND_URL` is optional and is not read by the UI; some environments keep it for backend tooling compatibility.
 
 ### Run the App
 
@@ -86,4 +87,4 @@ If your backend uses a different base URL, update `VITE_API_URL` in `.env`.
 
 ## License
 
-This project does not specify a license yet.
+All rights reserved. No license has been specified.
