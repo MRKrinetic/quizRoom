@@ -32,26 +32,20 @@ Real-time quiz rooms for hosts and players. This repository contains the **front
 
 ### Install
 
-```bash
 npm ci
-```
 
 ### Configure Environment
 
 Create a `.env` file in the project root:
 
-```env
 VITE_API_URL=http://localhost:8080
-```
 
 - `VITE_API_URL` is used for REST endpoints and WebSocket handshake.
 - `VITE_BACKEND_URL` is optional (only needed if your deployment or backend tooling expects it); the UI does not read it.
 
 ### Run the App
 
-```bash
 npm run dev
-```
 
 Open the app at `http://localhost:5173` (default Vite port).
 
@@ -65,13 +59,11 @@ Open the app at `http://localhost:5173` (default Vite port).
 
 ## Project Structure
 
-```
 src/
   components/        # UI building blocks and quiz components
   lib/               # State, types, and utilities
   pages/             # Route-level pages (Index, Host, Player)
   network.tsx        # API base + CSRF helper
-```
 
 ## Backend Requirements
 
